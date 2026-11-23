@@ -23,7 +23,12 @@ Customer churn (when subscribers cancel service) directly impacts recurring tele
 ## 📁 Project Structure
 
 ```text
-├── app.py                              # Streamlit dashboard (port 8502)
+├── app.py                              # Streamlit dashboard (local port 8502)
+├── vercel.json                         # Vercel static deployment config (serves web/)
+├── web/
+│   ├── index.html                      # Interactive web dashboard for Vercel
+│   ├── dashboard_data.json             # Exported EDA stats & dataset for browser charts
+│   └── rf_model.json                   # Exported Random Forest trees (exact sklearn parity)
 ├── data/
 │   ├── generate_data.py                # Dataset generator & cleaning demo
 │   ├── churn_data.csv                  # Generated raw dataset (5,000 rows)
@@ -33,7 +38,8 @@ Customer churn (when subscribers cancel service) directly impacts recurring tele
 ├── notebooks/
 │   └── EDA_and_Modeling.ipynb          # EDA, charts, & model comparison notebook
 ├── src/
-│   └── train.py                        # Model training & evaluation script
+│   ├── train.py                        # Model training & evaluation script
+│   └── export_web_assets.py            # Exports dataset & trained RF model for web/
 ├── requirements.txt                    # Python dependencies
 ├── .gitignore                          # Git ignore rules
 └── README.md                           # Project documentation
@@ -63,6 +69,15 @@ python -m streamlit run app.py --server.port 8502
 ```
 
 Then open **http://localhost:8502** in your browser.
+
+---
+
+## 🌐 Deploying Live
+
+- **Vercel (configured out of the box via `vercel.json`):**  
+  Streamlit uses WebSockets and cannot run natively inside Vercel serverless functions, so this repo includes a matching web version in `web/` powered by the exact exported Random Forest trees (`src/export_web_assets.py`). Whenever you retrain `models/churn_model.pkl`, run `python src/export_web_assets.py` and push to `main` to update Vercel.
+- **Streamlit Community Cloud:**  
+  To host the Streamlit UI (`app.py`) directly, connect this GitHub repo at [share.streamlit.io](https://share.streamlit.io) with main file `app.py`.
 
 ---
 

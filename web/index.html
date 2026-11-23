@@ -1,0 +1,1043 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Telecom Customer Churn Prediction &amp; EDA Dashboard</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
+  <style>
+    :root {
+      --bg: #f8fafc;
+      --surface: #ffffff;
+      --border: #e2e8f0;
+      --text: #0f172a;
+      --muted: #64748b;
+      --primary: #4f46e5;
+      --primary-soft: #eef2ff;
+      --green: #10b981;
+      --green-soft: #ecfdf5;
+      --red: #ef4444;
+      --red-soft: #fef2f2;
+      --amber: #f59e0b;
+      --radius: 12px;
+      --shadow: 0 1px 3px rgba(15, 23, 42, 0.06), 0 1px 2px rgba(15, 23, 42, 0.04);
+    }
+
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Inter, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.5;
+    }
+
+    .container {
+      max-width: 1280px;
+      margin: 0 auto;
+      padding: 24px 20px 56px;
+    }
+
+    header {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: space-between;
+      align-items: center;
+      gap: 16px;
+      margin-bottom: 24px;
+      padding-bottom: 18px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    header h1 {
+      margin: 0;
+      font-size: 1.7rem;
+      letter-spacing: -0.02em;
+    }
+
+    .subtitle {
+      margin: 4px 0 0;
+      color: var(--muted);
+      font-size: 0.92rem;
+    }
+
+    .model-badge {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      align-items: center;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 999px;
+      padding: 8px 14px;
+      font-size: 0.82rem;
+      color: var(--muted);
+      box-shadow: var(--shadow);
+    }
+    .model-badge strong { color: var(--text); }
+
+    /* Tabs */
+    .tabs {
+      display: flex;
+      gap: 8px;
+      border-bottom: 2px solid var(--border);
+      margin-bottom: 24px;
+    }
+    .tab-btn {
+      border: none;
+      background: transparent;
+      padding: 12px 20px;
+      font-size: 0.98rem;
+      font-weight: 600;
+      color: var(--muted);
+      cursor: pointer;
+      border-bottom: 3px solid transparent;
+      margin-bottom: -2px;
+      transition: all 0.15s ease;
+    }
+    .tab-btn:hover { color: var(--text); }
+    .tab-btn.active {
+      color: var(--primary);
+      border-bottom-color: var(--primary);
+    }
+
+    .tab-panel { display: none; }
+    .tab-panel.active { display: block; }
+
+    /* Cards & Grids */
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 20px;
+      box-shadow: var(--shadow);
+    }
+
+    .section-title {
+      margin: 0 0 12px;
+      font-size: 1.15rem;
+      font-weight: 700;
+    }
+
+    /* Filter Chips */
+    .filters-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+      gap: 16px;
+      margin-bottom: 20px;
+    }
+    .filter-label {
+      font-size: 0.85rem;
+      font-weight: 600;
+      color: var(--muted);
+      margin-bottom: 8px;
+      display: block;
+    }
+    .chips { display: flex; flex-wrap: wrap; gap: 8px; }
+    .chip {
+      border: 1px solid var(--border);
+      background: var(--surface);
+      color: var(--text);
+      padding: 6px 14px;
+      border-radius: 999px;
+      font-size: 0.86rem;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+    .chip.active {
+      background: var(--primary);
+      border-color: var(--primary);
+      color: #fff;
+    }
+
+    /* KPI Row */
+    .kpi-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 14px;
+      margin-bottom: 24px;
+    }
+    .kpi-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 16px 18px;
+      box-shadow: var(--shadow);
+    }
+    .kpi-label { font-size: 0.82rem; color: var(--muted); font-weight: 500; }
+    .kpi-value { font-size: 1.65rem; font-weight: 700; margin-top: 4px; letter-spacing: -0.02em; }
+
+    /* Charts Grid */
+    .charts-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(460px, 1fr));
+      gap: 20px;
+      margin-bottom: 24px;
+    }
+    .chart-card h3 {
+      margin: 0 0 12px;
+      font-size: 1rem;
+      font-weight: 600;
+    }
+    .chart-wrap {
+      position: relative;
+      height: 290px;
+    }
+
+    /* Tables */
+    .table-wrap { overflow-x: auto; }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.88rem;
+    }
+    th, td {
+      text-align: left;
+      padding: 10px 12px;
+      border-bottom: 1px solid var(--border);
+    }
+    th {
+      background: #f1f5f9;
+      font-weight: 600;
+      color: #334155;
+      white-space: nowrap;
+    }
+    tr:last-child td { border-bottom: none; }
+    .badge-missing {
+      display: inline-block;
+      padding: 2px 8px;
+      border-radius: 999px;
+      font-size: 0.78rem;
+      font-weight: 600;
+    }
+    .badge-warn { background: #fef3c7; color: #92400e; }
+    .badge-ok { background: var(--green-soft); color: #065f46; }
+
+    /* Correlation Heatmap */
+    .heatmap-grid {
+      display: grid;
+      grid-template-columns: 120px repeat(4, 1fr);
+      gap: 4px;
+      margin-top: 10px;
+    }
+    .hm-header, .hm-row-label {
+      font-size: 0.78rem;
+      font-weight: 600;
+      color: #334155;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      padding: 6px;
+    }
+    .hm-row-label { justify-content: flex-end; padding-right: 8px; }
+    .hm-cell {
+      height: 54px;
+      border-radius: 6px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 700;
+      font-size: 0.88rem;
+    }
+
+    /* Predictor Tab */
+    .predictor-grid {
+      display: grid;
+      grid-template-columns: 1.05fr 1fr;
+      gap: 24px;
+      align-items: start;
+    }
+
+    .preset-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-bottom: 18px;
+    }
+    .preset-btn {
+      border: 1px solid var(--border);
+      background: var(--bg);
+      padding: 6px 12px;
+      border-radius: 8px;
+      font-size: 0.82rem;
+      font-weight: 600;
+      color: #334155;
+      cursor: pointer;
+    }
+    .preset-btn:hover { background: var(--primary-soft); border-color: var(--primary); color: var(--primary); }
+
+    .control-group { margin-bottom: 18px; }
+    .control-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 6px;
+      font-size: 0.92rem;
+      font-weight: 600;
+    }
+    .control-val {
+      background: var(--primary-soft);
+      color: var(--primary);
+      padding: 2px 10px;
+      border-radius: 6px;
+      font-size: 0.85rem;
+    }
+    input[type="range"] {
+      width: 100%;
+      accent-color: var(--primary);
+      cursor: pointer;
+    }
+    select {
+      width: 100%;
+      padding: 10px 12px;
+      border-radius: 8px;
+      border: 1px solid var(--border);
+      background: var(--surface);
+      font-size: 0.94rem;
+      color: var(--text);
+    }
+
+    .verdict-box {
+      border-radius: var(--radius);
+      padding: 18px 20px;
+      margin-bottom: 18px;
+      border: 1px solid;
+    }
+    .verdict-risk {
+      background: var(--red-soft);
+      border-color: #fecaca;
+      color: #991b1b;
+    }
+    .verdict-safe {
+      background: var(--green-soft);
+      border-color: #a7f3d0;
+      color: #065f46;
+    }
+    .verdict-box h3 { margin: 0 0 4px; font-size: 1.2rem; }
+    .verdict-box p { margin: 0; font-size: 0.95rem; }
+
+    .prob-metrics {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      margin-bottom: 18px;
+    }
+    .signals-list {
+      margin: 10px 0 0;
+      padding-left: 18px;
+      font-size: 0.92rem;
+    }
+    .signals-list li { margin-bottom: 8px; }
+
+    details summary {
+      cursor: pointer;
+      font-weight: 600;
+      padding: 4px 0;
+      color: var(--primary);
+    }
+
+    .warning-banner {
+      background: #fef3c7;
+      border: 1px solid #fde68a;
+      color: #92400e;
+      padding: 14px 18px;
+      border-radius: var(--radius);
+      margin-bottom: 20px;
+      display: none;
+    }
+
+    @media (max-width: 900px) {
+      .predictor-grid { grid-template-columns: 1fr; }
+      .charts-grid { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <div>
+        <h1>📡 Telecom Customer Churn Prediction &amp; EDA Dashboard</h1>
+        <p class="subtitle">
+          Powered by Pandas, NumPy, Scikit-Learn Random Forest (200 trees), and interactive visualizations.
+        </p>
+      </div>
+      <div class="model-badge" id="modelBadge">
+        Loading model metrics...
+      </div>
+    </header>
+
+    <div class="tabs">
+      <button class="tab-btn active" data-tab="explorer">📊 Data Explorer</button>
+      <button class="tab-btn" data-tab="predictor">🔮 Churn Predictor</button>
+    </div>
+
+    <!-- TAB 1: DATA EXPLORER -->
+    <section id="tab-explorer" class="tab-panel active">
+      <div class="card" style="margin-bottom: 20px;">
+        <h2 class="section-title">Filter Data for Charts</h2>
+        <div class="filters-grid">
+          <div>
+            <span class="filter-label">Contract Type</span>
+            <div class="chips" id="contractFilters"></div>
+          </div>
+          <div>
+            <span class="filter-label">Internet Service</span>
+            <div class="chips" id="internetFilters"></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="warning-banner" id="emptyFilterBanner">
+        No customers match the selected filters. Select at least one Contract Type and one Internet Service.
+      </div>
+
+      <div class="kpi-grid">
+        <div class="kpi-card">
+          <div class="kpi-label">Customers Shown</div>
+          <div class="kpi-value" id="kpiCustomers">-</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-label">Churn Rate</div>
+          <div class="kpi-value" id="kpiChurnRate">-</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-label">Avg Monthly Charge</div>
+          <div class="kpi-value" id="kpiAvgCharge">-</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-label">Avg Tenure</div>
+          <div class="kpi-value" id="kpiAvgTenure">-</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-label">Raw Missing Cells</div>
+          <div class="kpi-value" id="kpiMissing">-</div>
+        </div>
+      </div>
+
+      <div class="card" style="margin-bottom: 24px;">
+        <h2 class="section-title">🧹 Data Quality &amp; Missing Value Report (Raw Dataset)</h2>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Column</th>
+                <th>Data Type</th>
+                <th>Missing Count</th>
+                <th>Missing (%)</th>
+                <th>Handling Strategy</th>
+              </tr>
+            </thead>
+            <tbody id="missingTableBody"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <h2 class="section-title" style="margin-bottom: 14px;">📈 Visual Churn Analysis</h2>
+      <div class="charts-grid">
+        <div class="card chart-card">
+          <h3>Customer Churn Distribution</h3>
+          <div class="chart-wrap"><canvas id="chartChurnDist"></canvas></div>
+        </div>
+        <div class="card chart-card">
+          <h3>Churn Rate (%) by Contract Type</h3>
+          <div class="chart-wrap"><canvas id="chartContractChurn"></canvas></div>
+        </div>
+        <div class="card chart-card">
+          <h3>Monthly Charges Distribution by Churn</h3>
+          <div class="chart-wrap"><canvas id="chartMonthlyCharges"></canvas></div>
+        </div>
+        <div class="card chart-card">
+          <h3>Churn Rate (%) by Support Calls</h3>
+          <div class="chart-wrap"><canvas id="chartSupportCalls"></canvas></div>
+        </div>
+        <div class="card chart-card">
+          <h3>Churn Rate (%) by Customer Tenure</h3>
+          <div class="chart-wrap"><canvas id="chartTenure"></canvas></div>
+        </div>
+        <div class="card chart-card">
+          <h3>Feature Correlation Heatmap</h3>
+          <div id="correlationHeatmap"></div>
+        </div>
+      </div>
+
+      <div class="card">
+        <details>
+          <summary>Preview Raw Dataset (First 50 Rows)</summary>
+          <div class="table-wrap" style="margin-top: 12px; max-height: 360px; overflow-y: auto;">
+            <table>
+              <thead>
+                <tr>
+                  <th>customer_id</th>
+                  <th>tenure</th>
+                  <th>monthly_charges</th>
+                  <th>contract_type</th>
+                  <th>internet_service</th>
+                  <th>support_calls</th>
+                  <th>churn</th>
+                </tr>
+              </thead>
+              <tbody id="previewTableBody"></tbody>
+            </table>
+          </div>
+        </details>
+      </div>
+    </section>
+
+    <!-- TAB 2: CHURN PREDICTOR -->
+    <section id="tab-predictor" class="tab-panel">
+      <div class="predictor-grid">
+        <div class="card">
+          <h2 class="section-title">Customer Profile Inputs</h2>
+          <div class="preset-row">
+            <button class="preset-btn" data-preset="high">🔴 High-Risk Sample</button>
+            <button class="preset-btn" data-preset="borderline">🟡 Borderline Sample</button>
+            <button class="preset-btn" data-preset="low">🟢 Loyal Sample</button>
+          </div>
+
+          <div class="control-group">
+            <div class="control-header">
+              <label for="inputTenure">Tenure (Months with Company)</label>
+              <span class="control-val" id="valTenure">12 mos</span>
+            </div>
+            <input type="range" id="inputTenure" min="1" max="72" step="1" value="12" />
+          </div>
+
+          <div class="control-group">
+            <div class="control-header">
+              <label for="inputCharges">Monthly Charges ($)</label>
+              <span class="control-val" id="valCharges">$75.00</span>
+            </div>
+            <input type="range" id="inputCharges" min="20" max="125" step="0.5" value="75" />
+          </div>
+
+          <div class="control-group">
+            <div class="control-header">
+              <label for="inputCalls">Customer Support Calls (Past 6 Months)</label>
+              <span class="control-val" id="valCalls">2 calls</span>
+            </div>
+            <input type="range" id="inputCalls" min="0" max="10" step="1" value="2" />
+          </div>
+
+          <div class="control-group">
+            <div class="control-header">
+              <label for="inputContract">Contract Type</label>
+            </div>
+            <select id="inputContract">
+              <option value="Month-to-Month" selected>Month-to-Month</option>
+              <option value="One Year">One Year</option>
+              <option value="Two Year">Two Year</option>
+            </select>
+          </div>
+
+          <div class="control-group" style="margin-bottom: 0;">
+            <div class="control-header">
+              <label for="inputInternet">Internet Service</label>
+            </div>
+            <select id="inputInternet">
+              <option value="Fiber Optic" selected>Fiber Optic</option>
+              <option value="DSL">DSL</option>
+              <option value="No">No</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="card">
+          <h2 class="section-title">Prediction Result (Random Forest)</h2>
+          <div id="verdictBox" class="verdict-box verdict-safe">
+            <h3>Calculating...</h3>
+            <p></p>
+          </div>
+
+          <div class="prob-metrics">
+            <div class="kpi-card">
+              <div class="kpi-label">Churn Probability</div>
+              <div class="kpi-value" id="predChurnProb">-</div>
+            </div>
+            <div class="kpi-card">
+              <div class="kpi-label">Retention Probability</div>
+              <div class="kpi-value" id="predStayProb">-</div>
+            </div>
+          </div>
+
+          <div class="chart-wrap" style="height: 150px; margin-bottom: 16px;">
+            <canvas id="chartPrediction"></canvas>
+          </div>
+
+          <h3 style="margin: 0 0 6px; font-size: 0.98rem;">Key Profile Signals</h3>
+          <ul class="signals-list" id="signalsList"></ul>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <script>
+    let DATA = null;
+    let RF_MODEL = null;
+    const selectedContracts = new Set();
+    const selectedInternets = new Set();
+    const charts = {};
+
+    // Tab switching
+    document.querySelectorAll(".tab-btn").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        document.querySelectorAll(".tab-btn").forEach((b) => b.classList.remove("active"));
+        document.querySelectorAll(".tab-panel").forEach((p) => p.classList.remove("active"));
+        btn.classList.add("active");
+        document.getElementById(`tab-${btn.dataset.tab}`).classList.add("active");
+      });
+    });
+
+    function pearson(xs, ys) {
+      const n = xs.length;
+      if (n < 2) return 0;
+      let sx = 0, sy = 0;
+      for (let i = 0; i < n; i++) { sx += xs[i]; sy += ys[i]; }
+      const mx = sx / n, my = sy / n;
+      let num = 0, dx2 = 0, dy2 = 0;
+      for (let i = 0; i < n; i++) {
+        const dx = xs[i] - mx, dy = ys[i] - my;
+        num += dx * dy;
+        dx2 += dx * dx;
+        dy2 += dy * dy;
+      }
+      const denom = Math.sqrt(dx2 * dy2);
+      return denom === 0 ? 0 : num / denom;
+    }
+
+    function heatColor(v) {
+      // Coolwarm interpolation: -1 blue, 0 white-slate, +1 coral-red
+      const clamped = Math.max(-1, Math.min(1, v));
+      if (clamped >= 0) {
+        const r = Math.round(248 + (220 - 248) * clamped);
+        const g = Math.round(250 + (68 - 250) * clamped);
+        const b = Math.round(252 + (68 - 252) * clamped);
+        return { bg: `rgb(${r},${g},${b})`, fg: clamped > 0.5 ? "#fff" : "#0f172a" };
+      } else {
+        const t = -clamped;
+        const r = Math.round(248 + (59 - 248) * t);
+        const g = Math.round(250 + (130 - 250) * t);
+        const b = Math.round(252 + (246 - 252) * t);
+        return { bg: `rgb(${r},${g},${b})`, fg: t > 0.5 ? "#fff" : "#0f172a" };
+      }
+    }
+
+    function destroyChart(key) {
+      if (charts[key]) { charts[key].destroy(); delete charts[key]; }
+    }
+
+    function renderExplorer() {
+      const cols = DATA.columns;
+      const indices = [];
+      for (let i = 0; i < cols.tenure.length; i++) {
+        if (selectedContracts.has(cols.contract_idx[i]) && selectedInternets.has(cols.internet_idx[i])) {
+          indices.push(i);
+        }
+      }
+
+      const emptyBanner = document.getElementById("emptyFilterBanner");
+      if (indices.length === 0) {
+        emptyBanner.style.display = "block";
+        document.getElementById("kpiCustomers").textContent = "0";
+        document.getElementById("kpiChurnRate").textContent = "-";
+        document.getElementById("kpiAvgCharge").textContent = "-";
+        document.getElementById("kpiAvgTenure").textContent = "-";
+        return;
+      }
+      emptyBanner.style.display = "none";
+
+      let churnCount = 0, sumCharge = 0, sumTenure = 0;
+      const fTenure = [], fCharge = [], fCalls = [], fChurn = [];
+      for (const i of indices) {
+        const ch = cols.churn[i];
+        churnCount += ch;
+        sumCharge += cols.monthly_charges[i];
+        sumTenure += cols.tenure[i];
+        fTenure.push(cols.tenure[i]);
+        fCharge.push(cols.monthly_charges[i]);
+        fCalls.push(cols.support_calls[i]);
+        fChurn.push(ch);
+      }
+      const n = indices.length;
+      const stayCount = n - churnCount;
+
+      document.getElementById("kpiCustomers").textContent = n.toLocaleString();
+      document.getElementById("kpiChurnRate").textContent = `${((churnCount / n) * 100).toFixed(1)}%`;
+      document.getElementById("kpiAvgCharge").textContent = `$${(sumCharge / n).toFixed(2)}`;
+      document.getElementById("kpiAvgTenure").textContent = `${(sumTenure / n).toFixed(1)} mos`;
+      document.getElementById("kpiMissing").textContent = DATA.total_missing_cells.toLocaleString();
+
+      // 1. Churn Distribution
+      destroyChart("churnDist");
+      charts.churnDist = new Chart(document.getElementById("chartChurnDist"), {
+        type: "bar",
+        data: {
+          labels: ["No (Retained)", "Yes (Churned)"],
+          datasets: [{
+            label: "Customers",
+            data: [stayCount, churnCount],
+            backgroundColor: ["#10b981", "#ef4444"],
+            borderRadius: 8,
+          }],
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: { legend: { display: false } },
+          scales: { y: { beginAtZero: true } },
+        },
+      });
+
+      // 2. Churn Rate by Contract Type
+      const contractNames = DATA.categories.contract_type;
+      const cTotals = contractNames.map(() => 0);
+      const cChurns = contractNames.map(() => 0);
+      for (const i of indices) {
+        const ci = cols.contract_idx[i];
+        cTotals[ci]++;
+        cChurns[ci] += cols.churn[i];
+      }
+      const activeContractLabels = [];
+      const activeContractRates = [];
+      contractNames.forEach((name, idx) => {
+        if (cTotals[idx] > 0) {
+          activeContractLabels.push(name);
+          activeContractRates.push(Number(((cChurns[idx] / cTotals[idx]) * 100).toFixed(1)));
+        }
+      });
+
+      destroyChart("contractChurn");
+      charts.contractChurn = new Chart(document.getElementById("chartContractChurn"), {
+        type: "bar",
+        data: {
+          labels: activeContractLabels,
+          datasets: [{
+            label: "Churn Rate (%)",
+            data: activeContractRates,
+            backgroundColor: ["#4f46e5", "#0ea5e9", "#14b8a6"],
+            borderRadius: 8,
+          }],
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: { legend: { display: false } },
+          scales: { y: { beginAtZero: true, max: Math.min(100, Math.max(...activeContractRates, 10) + 12) } },
+        },
+      });
+
+      // 3. Monthly Charges Distribution by Churn (binned $20-$125 in 7 buckets)
+      const chargeBins = [20, 35, 50, 65, 80, 95, 110, 126];
+      const chargeLabels = ["$20-35", "$35-50", "$50-65", "$65-80", "$80-95", "$95-110", "$110+"];
+      const noBins = new Array(7).fill(0);
+      const yesBins = new Array(7).fill(0);
+      for (const i of indices) {
+        const val = cols.monthly_charges[i];
+        let b = chargeBins.findIndex((edge, idx) => idx < 7 && val >= edge && val < chargeBins[idx + 1]);
+        if (b < 0) b = 6;
+        if (cols.churn[i] === 1) yesBins[b]++; else noBins[b]++;
+      }
+
+      destroyChart("monthlyCharges");
+      charts.monthlyCharges = new Chart(document.getElementById("chartMonthlyCharges"), {
+        type: "bar",
+        data: {
+          labels: chargeLabels,
+          datasets: [
+            { label: "No Churn", data: noBins, backgroundColor: "rgba(16, 185, 129, 0.75)", borderRadius: 4 },
+            { label: "Churn", data: yesBins, backgroundColor: "rgba(239, 68, 68, 0.8)", borderRadius: 4 },
+          ],
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          scales: { y: { beginAtZero: true } },
+        },
+      });
+
+      // 4. Churn Rate by Support Calls (0..7+)
+      const callLabels = ["0", "1", "2", "3", "4", "5", "6+"];
+      const callTot = new Array(7).fill(0);
+      const callCh = new Array(7).fill(0);
+      for (const i of indices) {
+        const b = Math.min(6, cols.support_calls[i]);
+        callTot[b]++;
+        callCh[b] += cols.churn[i];
+      }
+      const callRates = callTot.map((t, idx) => (t > 0 ? Number(((callCh[idx] / t) * 100).toFixed(1)) : 0));
+
+      destroyChart("supportCalls");
+      charts.supportCalls = new Chart(document.getElementById("chartSupportCalls"), {
+        type: "line",
+        data: {
+          labels: callLabels,
+          datasets: [{
+            label: "Churn Rate (%)",
+            data: callRates,
+            borderColor: "#ef4444",
+            backgroundColor: "rgba(239, 68, 68, 0.14)",
+            fill: true,
+            tension: 0.3,
+            pointRadius: 5,
+          }],
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: { legend: { display: false } },
+          scales: {
+            x: { title: { display: true, text: "Support Calls (Past 6 Months)" } },
+            y: { beginAtZero: true, max: 100, title: { display: true, text: "Churn Rate (%)" } },
+          },
+        },
+      });
+
+      // 5. Churn Rate by Tenure Buckets
+      const tenureLabels = ["1-12m", "13-24m", "25-36m", "37-48m", "49-60m", "61-72m"];
+      const tTot = new Array(6).fill(0);
+      const tCh = new Array(6).fill(0);
+      for (const i of indices) {
+        const b = Math.min(5, Math.floor((cols.tenure[i] - 1) / 12));
+        tTot[b]++;
+        tCh[b] += cols.churn[i];
+      }
+      const tRates = tTot.map((t, idx) => (t > 0 ? Number(((tCh[idx] / t) * 100).toFixed(1)) : 0));
+
+      destroyChart("tenure");
+      charts.tenure = new Chart(document.getElementById("chartTenure"), {
+        type: "bar",
+        data: {
+          labels: tenureLabels,
+          datasets: [{
+            label: "Churn Rate (%)",
+            data: tRates,
+            backgroundColor: "#6366f1",
+            borderRadius: 6,
+          }],
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: { legend: { display: false } },
+          scales: {
+            x: { title: { display: true, text: "Tenure Group (Months)" } },
+            y: { beginAtZero: true, title: { display: true, text: "Churn Rate (%)" } },
+          },
+        },
+      });
+
+      // 6. Correlation Heatmap
+      const names = ["tenure", "monthly_charges", "support_calls", "churn_binary"];
+      const vecs = [fTenure, fCharge, fCalls, fChurn];
+      const hm = document.getElementById("correlationHeatmap");
+      let html = `<div class="heatmap-grid"><div></div>`;
+      names.forEach((nm) => { html += `<div class="hm-header">${nm.replace("_", " ")}</div>`; });
+      for (let r = 0; r < names.length; r++) {
+        html += `<div class="hm-row-label">${names[r].replace("_", " ")}</div>`;
+        for (let c = 0; c < names.length; c++) {
+          const val = r === c ? 1.0 : pearson(vecs[r], vecs[c]);
+          const { bg, fg } = heatColor(val);
+          html += `<div class="hm-cell" style="background:${bg};color:${fg}">${val.toFixed(2)}</div>`;
+        }
+      }
+      html += `</div>`;
+      hm.innerHTML = html;
+    }
+
+    function predictChurnProbability(tenure, monthlyCharges, supportCalls, contractType, internetService) {
+      const m = RF_MODEL;
+      const numRaw = [tenure, monthlyCharges, supportCalls];
+      const vec = [];
+      for (let i = 0; i < numRaw.length; i++) {
+        vec.push((numRaw[i] - m.scaler_mean[i]) / m.scaler_scale[i]);
+      }
+      const catRaw = [contractType, internetService];
+      for (let i = 0; i < catRaw.length; i++) {
+        for (const cat of m.categories[i]) {
+          vec.push(catRaw[i] === cat ? 1.0 : 0.0);
+        }
+      }
+
+      let probSum = 0;
+      for (let ti = 0; ti < m.trees.length; ti++) {
+        const tree = m.trees[ti];
+        let node = 0;
+        while (tree.l[node] !== -1) {
+          if (vec[tree.f[node]] <= tree.t[node]) {
+            node = tree.l[node];
+          } else {
+            node = tree.r[node];
+          }
+        }
+        probSum += tree.p[node];
+      }
+      return probSum / m.n_trees;
+    }
+
+    function updatePrediction() {
+      const tenure = Number(document.getElementById("inputTenure").value);
+      const charges = Number(document.getElementById("inputCharges").value);
+      const calls = Number(document.getElementById("inputCalls").value);
+      const contract = document.getElementById("inputContract").value;
+      const internet = document.getElementById("inputInternet").value;
+
+      document.getElementById("valTenure").textContent = `${tenure} mos`;
+      document.getElementById("valCharges").textContent = `$${charges.toFixed(2)}`;
+      document.getElementById("valCalls").textContent = `${calls} ${calls === 1 ? "call" : "calls"}`;
+
+      const churnProb = predictChurnProbability(tenure, charges, calls, contract, internet);
+      const stayProb = 1 - churnProb;
+      const willChurn = churnProb >= 0.5;
+
+      const verdictBox = document.getElementById("verdictBox");
+      verdictBox.className = `verdict-box ${willChurn ? "verdict-risk" : "verdict-safe"}`;
+      verdictBox.innerHTML = willChurn
+        ? `<h3>⚠️ High Churn Risk — Predicted: YES</h3><p>Estimated Churn Probability: <strong>${(churnProb * 100).toFixed(1)}%</strong></p>`
+        : `<h3>✅ Likely to Stay — Predicted: NO</h3><p>Estimated Churn Probability: <strong>${(churnProb * 100).toFixed(1)}%</strong></p>`;
+
+      document.getElementById("predChurnProb").textContent = `${(churnProb * 100).toFixed(1)}%`;
+      document.getElementById("predStayProb").textContent = `${(stayProb * 100).toFixed(1)}%`;
+
+      destroyChart("prediction");
+      charts.prediction = new Chart(document.getElementById("chartPrediction"), {
+        type: "bar",
+        data: {
+          labels: ["Stay (No)", "Churn (Yes)"],
+          datasets: [{
+            data: [Number((stayProb * 100).toFixed(1)), Number((churnProb * 100).toFixed(1))],
+            backgroundColor: ["#10b981", "#ef4444"],
+            borderRadius: 6,
+            barThickness: 28,
+          }],
+        },
+        options: {
+          indexAxis: "y",
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: { legend: { display: false } },
+          scales: { x: { beginAtZero: true, max: 100, title: { display: true, text: "Probability (%)" } } },
+        },
+      });
+
+      const signals = [];
+      if (contract === "Month-to-Month") {
+        signals.push("🔴 <strong>Month-to-Month contract</strong> carries higher churn risk than annual plans.");
+      } else {
+        signals.push(`🟢 <strong>${contract} contract</strong> helps stabilize customer retention.`);
+      }
+      if (calls >= 4) {
+        signals.push(`🔴 <strong>High support volume (${calls} calls)</strong> often indicates unresolved issues.`);
+      } else if (calls <= 1) {
+        signals.push(`🟢 <strong>Low support calls (${calls})</strong> suggests a smooth service experience.`);
+      }
+      if (tenure < 12) {
+        signals.push(`🟡 <strong>Short tenure (${tenure} months)</strong>: newer customers are more likely to switch.`);
+      } else if (tenure >= 36) {
+        signals.push(`🟢 <strong>Long tenure (${tenure} months)</strong> signals strong loyalty.`);
+      }
+      if (internet === "Fiber Optic" && charges >= 85) {
+        signals.push("🟡 <strong>High Fiber Optic bill</strong> may increase price sensitivity.");
+      }
+      document.getElementById("signalsList").innerHTML = signals.map((s) => `<li>${s}</li>`).join("");
+    }
+
+    function setupFilterChips(containerId, items, stateSet) {
+      const container = document.getElementById(containerId);
+      container.innerHTML = "";
+      items.forEach((label, idx) => {
+        stateSet.add(idx);
+        const btn = document.createElement("button");
+        btn.className = "chip active";
+        btn.textContent = label;
+        btn.addEventListener("click", () => {
+          if (stateSet.has(idx)) {
+            stateSet.delete(idx);
+            btn.classList.remove("active");
+          } else {
+            stateSet.add(idx);
+            btn.classList.add("active");
+          }
+          renderExplorer();
+        });
+        container.appendChild(btn);
+      });
+    }
+
+    async function init() {
+      const [dataRes, modelRes] = await Promise.all([
+        fetch("./dashboard_data.json"),
+        fetch("./rf_model.json"),
+      ]);
+      DATA = await dataRes.json();
+      RF_MODEL = await modelRes.json();
+
+      const m = DATA.metrics;
+      document.getElementById("modelBadge").innerHTML =
+        `RF Test Metrics: <strong>Acc ${m.accuracy}%</strong> · <strong>Prec ${m.precision}%</strong> · <strong>Rec ${m.recall}%</strong> · <strong>F1 ${m.f1}%</strong>`;
+
+      // Missing value table
+      document.getElementById("missingTableBody").innerHTML = DATA.missing_report
+        .map((r) => `
+          <tr>
+            <td><strong>${r.column}</strong></td>
+            <td>${r.dtype}</td>
+            <td><span class="badge-missing ${r.missing_count > 0 ? "badge-warn" : "badge-ok"}">${r.missing_count}</span></td>
+            <td>${r.missing_pct.toFixed(2)}%</td>
+            <td>${r.strategy}</td>
+          </tr>
+        `)
+        .join("");
+
+      // Preview table
+      document.getElementById("previewTableBody").innerHTML = DATA.preview_rows
+        .map((r) => `
+          <tr>
+            <td>${r.customer_id}</td>
+            <td>${r.tenure}</td>
+            <td>${r.monthly_charges === null ? "<em>Missing</em>" : "$" + Number(r.monthly_charges).toFixed(2)}</td>
+            <td>${r.contract_type}</td>
+            <td>${r.internet_service === null ? "<em>Missing</em>" : r.internet_service}</td>
+            <td>${r.support_calls === null ? "<em>Missing</em>" : r.support_calls}</td>
+            <td><strong style="color:${r.churn === "Yes" ? "#ef4444" : "#10b981"}">${r.churn}</strong></td>
+          </tr>
+        `)
+        .join("");
+
+      setupFilterChips("contractFilters", DATA.categories.contract_type, selectedContracts);
+      setupFilterChips("internetFilters", DATA.categories.internet_service, selectedInternets);
+      renderExplorer();
+
+      // Predictor bindings
+      ["inputTenure", "inputCharges", "inputCalls", "inputContract", "inputInternet"].forEach((id) => {
+        document.getElementById(id).addEventListener("input", updatePrediction);
+        document.getElementById(id).addEventListener("change", updatePrediction);
+      });
+
+      const presets = {
+        high: { tenure: 4, charges: 102, calls: 6, contract: "Month-to-Month", internet: "Fiber Optic" },
+        borderline: { tenure: 14, charges: 78, calls: 3, contract: "Month-to-Month", internet: "DSL" },
+        low: { tenure: 56, charges: 48, calls: 0, contract: "Two Year", internet: "DSL" },
+      };
+      document.querySelectorAll(".preset-btn").forEach((btn) => {
+        btn.addEventListener("click", () => {
+          const p = presets[btn.dataset.preset];
+          document.getElementById("inputTenure").value = p.tenure;
+          document.getElementById("inputCharges").value = p.charges;
+          document.getElementById("inputCalls").value = p.calls;
+          document.getElementById("inputContract").value = p.contract;
+          document.getElementById("inputInternet").value = p.internet;
+          updatePrediction();
+        });
+      });
+
+      updatePrediction();
+    }
+
+    init().catch((err) => {
+      console.error(err);
+      document.getElementById("modelBadge").textContent = "Failed to load dashboard assets.";
+    });
+  </script>
+</body>
+</html>

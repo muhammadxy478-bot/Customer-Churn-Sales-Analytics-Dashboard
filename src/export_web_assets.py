@@ -61,8 +61,8 @@ def export_dashboard_data(raw_df: pd.DataFrame, model) -> dict:
             }
         )
 
-    # Raw preview (first 50 rows, replace NaN with null)
-    preview_rows = raw_df.head(50).where(pd.notna(raw_df.head(50)), None).to_dict(orient="records")
+    # Raw preview (first 50 rows; use pandas to_json so NaN/NA cleanly becomes JSON null)
+    preview_rows = json.loads(raw_df.head(50).to_json(orient="records"))
 
     # Cleaned rows in compact columnar format for fast client-side filtering
     clean_df = raw_df.copy()
@@ -202,8 +202,14 @@ def main() -> None:
     dashboard_path = WEB_DIR / "dashboard_data.json"
     rf_path = WEB_DIR / "rf_model.json"
 
-    dashboard_path.write_text(json.dumps(dashboard_payload, separators=(",", ":")), encoding="utf-8")
-    rf_path.write_text(json.dumps(rf_payload, separators=(",", ":")), encoding="utf-8")
+    dashboard_path.write_text(
+        json.dumps(dashboard_payload, separators=(",", ":"), allow_nan=False),
+        encoding="utf-8",
+    )
+    rf_path.write_text(
+        json.dumps(rf_payload, separators=(",", ":"), allow_nan=False),
+        encoding="utf-8",
+    )
 
     print(f"Exported {dashboard_path} ({dashboard_path.stat().st_size / 1024:.1f} KB)")
     print(f"Exported {rf_path} ({rf_path.stat().st_size / 1024:.1f} KB)")
